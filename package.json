@@ -1,6 +1,6 @@
 {
   "name": "nest-typeorm-query-parser",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Typeorm query string parser to be used in applications developed with NestJS.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lucasrochagit/nest-query-parser.git"
+    "url": "git+https://github.com/lucasrochagit/nest-typeorm-query-parser.git"
   },
   "keywords": [],
   "author": "Lucas Cosmo Rocha",
