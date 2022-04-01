@@ -3,8 +3,9 @@ export class TypeOrmQueryModel {
   skip!: number;
   order!: QueryObjectModel;
   where!: QueryObjectModel;
+  select?: any[];
 }
 
 export class QueryObjectModel {
-  [key: string]: string | number | Date | any;
+  [key: string]: string | number | Date | any; 
 }

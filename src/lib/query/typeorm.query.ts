@@ -1,7 +1,8 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { TypeOrmQueryModel, QueryObjectModel } from '../model/query.model';
-import { StringUtils } from '../utils/string.util';
-import { StringValidator } from '../utils/string.validator';
+import { createParamDecorator, ExecutionContext } from "@nestjs/common";
+import { Like, Not } from "typeorm";
+import { TypeOrmQueryModel, QueryObjectModel } from "../model/query.model";
+import { StringUtils } from "../utils/string.util";
+import { StringValidator } from "../utils/string.validator";
 
 export const TypeOrmQueryParser = (): MethodDecorator => {
   return (_target, _key, descriptor: TypedPropertyDescriptor<any>) => {
@@ -30,10 +31,11 @@ function parse(query: any): TypeOrmQueryModel {
 
   const result: TypeOrmQueryModel = new TypeOrmQueryModel();
 
-  result.take = getIntKey(query, 'limit', def_limit);
+  result.take = getIntKey(query, "limit", def_limit);
   result.skip = query.page
     ? getSkipFromPage(query, def_page, result.take)
-    : getIntKey(query, 'skip', def_skip);
+    : getIntKey(query, "skip", def_skip);
+  result.select = getSelect(query) ?? undefined;
   result.order = getSort(query, {});
   result.where = getFilter(query, {});
 
@@ -48,16 +50,29 @@ function getIntKey(query: any, key: string, def: number): number {
 }
 
 function getSkipFromPage(query: any, def: number, limit: number): number {
-  const page = getIntKey(query, 'page', def);
+  const page = getIntKey(query, "page", def);
   return page > 1 ? (page - 1) * limit : 0;
+}
+
+function getSelect(query: any): string[] | undefined {
+  if (!query.select) return undefined;
+  if (query.select instanceof Array) {
+    query.select = query.select.join(",");
+  }
+  return query.select
+    .split(",")
+    .map((key: string) => StringUtils.cleanString(key, /[^A-z0-9_.]/g));
 }
 
 function getSort(query: any, def: QueryObjectModel): QueryObjectModel {
   if (!query.sort) return def;
-  return StringUtils.splitString(query.sort, ',').reduce(
+  if (query.sort instanceof Array) {
+    query.sort = query.sort.join(",");
+  }
+  return StringUtils.splitString(query.sort, ",").reduce(
     (obj: { [x: string]: string }, key: string) => {
       const cleanKey: string = StringUtils.cleanString(key, /[^A-z0-9_.]/g);
-      obj[cleanKey] = key.startsWith('-') ? 'DESC' : 'ASC';
+      obj[cleanKey] = key.startsWith("-") ? "DESC" : "ASC";
       return obj;
     },
     {}
@@ -73,8 +88,7 @@ function getFilter(query: any, def: QueryObjectModel): QueryObjectModel {
   if (!query) return def;
   return Object.keys(query).reduce((obj: any, key: string) => {
     const queryValue = query[key];
-
-    const value = getSimpleFilterValue(key, queryValue);
+    const value = getSimpleFilterValue(queryValue);
     if (value !== null) {
       const cleanKey: string = StringUtils.cleanString(key, /[^A-z0-9_.]/g);
       obj[cleanKey] = value;
@@ -84,7 +98,6 @@ function getFilter(query: any, def: QueryObjectModel): QueryObjectModel {
 }
 
 function getSimpleFilterValue(
-  key: string,
   filter: string
 ): string | number | boolean | Date | object | null {
   if (!filter) return null;
@@ -100,10 +113,9 @@ function getSimpleFilterValue(
     return +filter;
   }
 
-  if (filter === 'true' || filter === 'false') {
-    return filter === 'true';
+  if (filter === "true" || filter === "false") {
+    return filter === "true";
   }
 
   return StringUtils.cleanString(filter, /[^\w\s@.-:]/g);
-
 }
